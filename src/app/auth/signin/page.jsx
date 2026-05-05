@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Eye, EyeSlash } from "@gravity-ui/icons";
 import {
   Button,
-  Description,
+  toast,
   FieldError,
   Form,
   Input,
@@ -12,28 +12,41 @@ import {
   TextField,
 } from "@heroui/react";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 const SignInPage = () => {
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const userData = Object.fromEntries(formData.entries());
+
+    setIsLoading(true);
+
     console.log("form submitted", userData);
 
     const { data, error } = await authClient.signIn.email({
       email: userData.email,
       password: userData.password,
-      callbackURL: "/",
     });
-    if (data) {
-      alert("LogIn Success");
-    }
+    // console.log("signin response", { data, error });
+
+    setIsLoading(false);
+
     if (error) {
-      alert("Error signing", error.message);
+      toast.warning(error.message);
+      return;
     }
-    console.log("signin response", { data, error });
+
+    if (data) {
+      toast.success("Login Successful 🎉", {
+        description: "Welcome back!",
+      });
+      router.replace("/");
+    }
   };
 
   return (
@@ -85,8 +98,10 @@ const SignInPage = () => {
           </InputGroup>
         </TextField>
         <div className="flex gap-2 justify-center">
-          <Button type="submit">Log In</Button>
-          <Button type="reset" variant="secondary">
+          <Button isPending={isLoading} type="submit">
+            Log In
+          </Button>
+          <Button isDisabled={isLoading} type="reset" variant="secondary">
             Reset
           </Button>
         </div>
